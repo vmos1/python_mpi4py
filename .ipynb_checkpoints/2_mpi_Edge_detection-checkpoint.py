@@ -113,11 +113,12 @@ print("Rank",rank)
 t0=time.time()
 
 data=np.empty((64,256),dtype=np.float64)
-# data2=np.empty((64,256),dtype=np.float64)
-ed1=np.empty((64,256),dtype=np.bool)
-ed2=np.empty((64,256),dtype=np.bool)
+
 
 if rank==0:
+    ed1=np.empty((64,256),dtype=np.bool)
+    ed2=np.empty((64,256),dtype=np.bool)
+    
     # Create and split data
     im=f_create_image(length)
     # print("Image size",length)
@@ -133,49 +134,41 @@ if rank==0:
     time.sleep(2)
     t3=time.time()
     
-    im_combined_lst_1=[[] for i in range(num_pieces)]
-    im_combined_lst_2=[[] for i in range(num_pieces)]
+#     im_combined_lst_1=[[] for i in range(num_pieces)]
+#     im_combined_lst_2=[[] for i in range(num_pieces)]
+    
+    im_combined_lst_1,im_combined_lst_2=[],[]
+    
     print("Time for one loop",t3-t1)
-    im_combined_lst_1[0]=edges1
-    im_combined_lst_2[0]=edges2
+    im_combined_lst_1.append(edges1)
+    im_combined_lst_2.append(edges2)
+#     im_combined_lst_1[0]=edges1
+#     im_combined_lst_2[0]=edges2
     
     comm.Recv(ed1,source=1,tag=16)
     comm.Recv(ed2,source=1,tag=17)
-    im_combined_lst_1[1]=ed1
-    im_combined_lst_2[1]=ed2
-    
-    f_plot_single_image(im_combined_lst_2[1])
-    plt.savefig('rank1_return_edge.pdf')
-    
+    im_combined_lst_1.append(ed1)
+    im_combined_lst_2.append(ed2)
+
+    ed1=np.empty((64,256),dtype=np.bool)
+    ed2=np.empty((64,256),dtype=np.bool)
     comm.Recv(ed1,source=2,tag=18)
     comm.Recv(ed2,source=2,tag=19)
-    im_combined_lst_1[2]=ed1
-    im_combined_lst_2[2]=ed2
+    im_combined_lst_1.append(ed1)
+    im_combined_lst_2.append(ed2)
     
-    f_plot_single_image(im_combined_lst_2[2])
-    plt.savefig('rank2_return_edge.pdf')
-    
+    ed1=np.empty((64,256),dtype=np.bool)
+    ed2=np.empty((64,256),dtype=np.bool)
     comm.Recv(ed1,source=3,tag=20)
     comm.Recv(ed2,source=3,tag=21)
-    im_combined_lst_1[3]=ed1
-    im_combined_lst_2[3]=ed2
-    
-    f_plot_single_image(im_combined_lst_2[3])
-    plt.savefig('rank3_return_edge.pdf')
-    time.sleep(2)
-    
-    print(type(im_combined_lst_2[2]))
+    im_combined_lst_1.append(ed1)
+    im_combined_lst_2.append(ed2)
+        
     assert not np.array_equal(im_combined_lst_2[2],im_combined_lst_2[3]), "the two lists should not be equal"
     
     # Combine data back in rank 0
     im_combined1=np.vstack(im_combined_lst_1)
     im_combined2=np.vstack(im_combined_lst_2)
-    f_plot_single_image(im_combined_lst_2[1])
-    plt.savefig('return_edge1.pdf')
-    f_plot_single_image(im_combined_lst_2[2])
-    plt.savefig('return_edge2.pdf')
-    f_plot_single_image(im_combined_lst_2[3])
-    plt.savefig('return_edge3.pdf')
     
     f_plot_all(im,im_combined1,im_combined2)
     plt.savefig('edge_detection_split.pdf')
@@ -193,9 +186,6 @@ if rank==1:
     time.sleep(2)
     t3=time.time()
     print("Time for one loop",t3-t1)
-    
-    f_plot_single_image(edges2)
-    plt.savefig('rank1_edge.pdf')
 #     im_combined_lst_1[rank]=edges1
 #     im_combined_lst_2[rank]=edges2
     comm.Send(edges1, dest=0, tag=16)
@@ -225,8 +215,6 @@ if rank==3:
     time.sleep(2)
     t3=time.time()  
     print("Time for one loop",t3-t1)
-    f_plot_single_image(edges2)
-    plt.savefig('rank3_edge.pdf')
 #     im_combined_lst_1[rank]=edges1
 #     im_combined_lst_2[rank]=edges2
     comm.Send(edges1, dest=0, tag=20)
